@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang='en'>
+<head>
+  <meta charset='utf-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1' />
+  <title>ColdChainX – Standalone</title>
+  <style>
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial; background:#f9fafb; }
+    .card { border:1px solid #e5e7eb; border-radius:16px; padding:16px; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    .btn { border:1px solid #e5e7eb; border-radius:14px; padding:6px 12px; background:white; cursor:pointer; }
+    .btn.primary { background:#111827; color:white; }
+    .kpi { border-radius:16px; padding:16px; background:white; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    .grid { display:grid; gap:12px; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .chip { border-radius:9999px; padding:2px 8px; font-size:12px; }
+  </style>
+  <!-- React & ReactDOM via CDN -->
+  <script crossorigin src='https://unpkg.com/react@18/umd/react.development.js'></script>
+  <script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.development.js'></script>
+</head>
+<body>
+  <div id='root' style='max-width:1040px;margin:24px auto;padding:16px;'></div>
+  <script>
+    const { useState } = React;
+    const roles = ['FPO','Distributor','Retailer'];
+    const seedLots = [
+      { id:'LOT-NSK-001', crop:'Grapes', variety:'Thompson', weight:800, score:92, days:9 },
+      { id:'LOT-NSK-002', crop:'Tomato', variety:'Arka', weight:1200, score:81, days:4 },
+      { id:'LOT-NSK-003', crop:'Pomegranate', variety:'Bhagwa', weight:600, score:87, days:6 },
+    ];
+
+    function ScoreChip({ score }) {
+      let bg = score >= 90 ? '#d1fae5' : score >= 75 ? '#fef3c7' : '#fee2e2';
+      let fg = score >= 90 ? '#065f46' : score >= 75 ? '#92400e' : '#991b1b';
+      return React.createElement('span', { className:'chip', style:{ background:bg, color:fg } }, score);
+    }
+
+    function KPI({label, value}) {
+      return React.createElement('div', { className:'kpi' },
+        React.createElement('div', { style:{ color:'#6b7280', fontSize:'12px' } }, label),
+        React.createElement('div', { style:{ fontSize:'20px', fontWeight:600 } }, value)
+      );
+    }
+
+    function Header({role, setRole}) {
+      return React.createElement('div', { style:{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0' } },
+        React.createElement('div', { style:{ fontSize:'22px', fontWeight:700 } }, 'ColdChainX'),
+        React.createElement('div', { style:{ display:'flex', gap:'8px' } },
+          roles.map(r => React.createElement('button', {
+            key:r, onClick:() => setRole(r),
+            className:'btn', style: role === r ? { background:'#111827', color:'#fff' } : {}
+          }, r))
+        )
+      );
+    }
+
+    function FPOView() {
+      const [lots, setLots] = useState(seedLots);
+      const [form, setForm] = useState({ crop:'', variety:'', weight:'' });
+      function addLot() {
+        if(!form.crop || !form.variety || !form.weight) return;
+        const id = 'LOT-NSK-' + String(lots.length + 1).padStart(3,'0');
+        setLots([{ id, crop:form.crop, variety:form.variety, weight:parseFloat(form.weight), score:88, days:7 }, ...lots]);
+        setForm({ crop:'', variety:'', weight:'' });
+      }
+      return React.createElement('div', { className:'grid', style:{ gap:'16px' } },
+        React.createElement('div', { className:'grid grid-3' },
+          React.createElement(KPI, { label:'Accepted-weight %', value:'82%' }),
+          React.createElement(KPI, { label:'Active lots', value:String(lots.length) }),
+          React.createElement(KPI, { label:'Next payout', value:'T+2 days' }),
+        ),
+        React.createElement('div', { className:'card grid' },
+          React.createElement('div', { style:{ fontWeight:600 } }, 'Create Lot'),
+          React.createElement('div', { className:'grid grid-3' },
+            React.createElement('input',{ className:'btn', placeholder:'Crop', value:form.crop, onChange:e=>setForm({...form, crop:e.target.value}) }),
+            React.createElement('input',{ className:'btn', placeholder:'Variety', value:form.variety, onChange:e=>setForm({...form, variety:e.target.value}) }),
+            React.createElement('input',{ className:'btn', placeholder:'Est. weight (kg)', value:form.weight, onChange:e=>setForm({...form, weight:e.target.value}) }),
+          ),
+          React.createElement('div', { style:{ display:'flex', gap:'8px' } },
+            React.createElement('button', { className:'btn primary', onClick:addLot }, 'Save Lot'),
+            React.createElement('button', { className:'btn' }, 'Find Pre-cool Slot'),
+          )
+        ),
+        React.createElement('div', null,
+          React.createElement('div', { style:{ fontWeight:600 } }, 'My Lots'),
+          React.createElement('div', { className:'grid', style:{ gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:'12px' } },
+            lots.map(l => React.createElement('div', { key:l.id, className:'card grid' },
+              React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center' } },
+                React.createElement('div', { style:{ fontWeight:600 } }, l.id),
+                React.createElement(ScoreChip, { score:l.score })
+              ),
+              React.createElement('div', { style:{ color:'#4b5563', fontSize:'14px' } }, `${l.crop} • ${l.variety} • ${l.weight} kg`),
+              React.createElement('div', { style:{ fontSize:'12px' } }, `Shelf-life left: ${l.days} days`),
+              React.createElement('div', { style:{ display:'flex', gap:'8px' } },
+                React.createElement('button', { className:'btn' }, 'Book Pre-cool'),
+                React.createElement('button', { className:'btn' }, 'Find Reefer'),
+              )
+            ))
+          )
+        )
+      );
+    }
+
+    function DistributorView() {
+      return React.createElement('div', { className:'grid', style:{ gap:'16px' } },
+        React.createElement('div', { className:'grid grid-3' },
+          React.createElement(KPI, { label:'Active trips', value:'8' }),
+          React.createElement(KPI, { label:'On-time %', value:'93%' }),
+          React.createElement(KPI, { label:'Dispute TAT', value:'< 48h' }),
+        ),
+        React.createElement('div', { className:'card grid' },
+          React.createElement('div', { style:{ fontWeight:600 } }, 'Lane Planner'),
+          React.createElement('table', { style:{ width:'100%', fontSize:'14px', borderCollapse:'collapse' } },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{ borderBottom:'1px solid #e5e7eb', textAlign:'left' } },
+                React.createElement('th', { style:{ padding:'8px 0' } }, 'Lane'),
+                React.createElement('th', null, 'km'),
+                React.createElement('th', null, 'Co-load'),
+                React.createElement('th', null, 'Risk'),
+                React.createElement('th', null, '')
+              )
+            ),
+            React.createElement('tbody', null,
+              React.createElement('tr', { style:{ borderBottom:'1px solid #e5e7eb' } },
+                React.createElement('td', { style:{ padding:'8px 0' } }, 'Nashik → Mumbai DC'),
+                React.createElement('td', null, '175'),
+                React.createElement('td', null, 'High'),
+                React.createElement('td', null, 'Low'),
+                React.createElement('td', null, React.createElement('button', { className:'btn' }, 'Build Load'))
+              ),
+              React.createElement('tr', { style:{ borderBottom:'1px solid #e5e7eb' } },
+                React.createElement('td', { style:{ padding:'8px 0' } }, 'Nashik → Pune DC'),
+                React.createElement('td', null, '210'),
+                React.createElement('td', null, 'Med'),
+                React.createElement('td', null, 'Med'),
+                React.createElement('td', null, React.createElement('button', { className:'btn' }, 'Build Load'))
+              ),
+              React.createElement('tr', null,
+                React.createElement('td', { style:{ padding:'8px 0' } }, 'Nashik → Nhava Sheva (Port)'),
+                React.createElement('td', null, '180'),
+                React.createElement('td', null, 'Low'),
+                React.createElement('td', null, 'High'),
+                React.createElement('td', null, React.createElement('button', { className:'btn' }, 'Build Load'))
+              )
+            )
+          )
+        ),
+        React.createElement('div', { className:'card grid' },
+          React.createElement('div', { style:{ fontWeight:600 } }, 'Trip Monitor'),
+          React.createElement('div', { className:'grid', style:{ gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:'12px' } },
+            seedLots.map(l => React.createElement('div', { key:l.id, className:'card' },
+              React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center' } },
+                React.createElement('div', { style:{ fontWeight:600 } }, l.id),
+                React.createElement(ScoreChip, { score:l.score })
+              ),
+              React.createElement('div', { style:{ color:'#4b5563', fontSize:'14px' } }, 'Temp: 3.1°C • Humidity: 90% • ETA: 01:12'),
+              React.createElement('div', { style:{ display:'flex', gap:'8px' } },
+                React.createElement('button', { className:'btn' }, 'Nudge SOP'),
+                React.createElement('button', { className:'btn' }, 'Reroute'),
+                React.createElement('button', { className:'btn' }, 'Raise Dispute')
+              )
+            ))
+          )
+        )
+      );
+    }
+
+    function RetailerView() {
+      return React.createElement('div', { className:'grid', style:{ gap:'16px' } },
+        React.createElement('div', { className:'grid grid-3' },
+          React.createElement(KPI, { label:'Shrink (pilot SKUs)', value:'-32%' }),
+          React.createElement(KPI, { label:'On-shelf avail.', value:'+2.8 pp' }),
+          React.createElement(KPI, { label:'Dispute TAT', value:'< 48h' }),
+        ),
+        React.createElement('div', { className:'card grid' },
+          React.createElement('div', { style:{ fontWeight:600 } }, 'Inbound Queue'),
+          React.createElement('div', { className:'grid', style:{ gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:'12px' } },
+            seedLots.map(l => React.createElement('div', { key:l.id, className:'card grid' },
+              React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center' } },
+                React.createElement('div', { style:{ fontWeight:600 } }, `${l.crop} • ${l.variety}`),
+                React.createElement(ScoreChip, { score:l.score })
+              ),
+              React.createElement('div', { style:{ color:'#4b5563', fontSize:'14px' } }, `${l.id} • ${l.weight} kg • ${l.days} days left`),
+              React.createElement('div', { style:{ display:'flex', gap:'8px' } },
+                React.createElement('button', { className:'btn' }, 'Gate-in QC'),
+                React.createElement('button', { className:'btn' }, 'Fast-track')
+              )
+            ))
+          )
+        ),
+        React.createElement('div', { className:'card grid' },
+          React.createElement('div', { style:{ fontWeight:600 } }, 'Marketplace (Verified Lots)'),
+          React.createElement('div', { className:'grid', style:{ gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:'12px' } },
+            seedLots.map(l => React.createElement('div', { key:l.id, className:'card grid' },
+              React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center' } },
+                React.createElement('div', { style:{ fontWeight:600 } }, `${l.crop} • ${l.variety}`),
+                React.createElement(ScoreChip, { score:l.score })
+              ),
+              React.createElement('div', { style:{ color:'#4b5563', fontSize:'14px' } }, `${l.weight} kg • ${l.days} days left`),
+              React.createElement('button', { className:'btn primary' }, 'Buy')
+            ))
+          )
+        )
+      );
+    }
+
+    function App() {
+      const [role, setRole] = React.useState('FPO');
+      return React.createElement('div', { style:{ maxWidth:'1040px', margin:'0 auto', padding:'8px' } },
+        React.createElement(Header, { role, setRole }),
+        React.createElement('div', { style:{ marginTop:'12px' } },
+          role === 'FPO' ? React.createElement(FPOView) :
+          role === 'Distributor' ? React.createElement(DistributorView) :
+          React.createElement(RetailerView)
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
